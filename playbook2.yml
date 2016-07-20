@@ -1,0 +1,57 @@
+- hosts: all
+  become: true
+  vars_files:
+  - vars.yml
+  pre_tasks: 
+  - name: Add Stack User (stack|stack)
+    user: name=stack comment="Stack User" groups=wheel password=$6$rounds=656000$GxOkQlwGoe.LBYrK$tIFHEOC/mUNwvTxdqLJNNxSUOQmyaxILNswSh2itglm3104zfjJPs07JASsexLCng4T5ZrWPob4hQK8tlQuJx. state=present
+
+  - name: Change root pw (root|rpcr)
+    user: name=root password=$6$rounds=656000$0tqH37pBAxrlG9H0$KLGmcdSUAkXbvbUq0VF.10FEnII6QEa9HTA6pdzlGg46voT5Wyl6u6eLckwyLuaDdf8ihW1r5aJYHVcLzmkiz.
+
+  - name: Add Mitaka repository
+    yum: name=centos-release-openstack-mitaka state=latest
+
+  - name: Add Epel repository
+    yum: name=epel-release state=latest
+   
+  - name: Change mirrorlist for baseurl epel repo
+    shell: "sed 's/#baseurl/baseurl/' /etc/yum.repos.d/epel.repo"
+
+  - name: Change mirrorlist for baseurl epel repo II
+    shell: "sed 's/mirrorlist/#mirrorlist/' /etc/yum.repos.d/epel.repo"
+ 
+  - name: Adding sshpass
+    shell: "yum install sshpass -y"
+#    yum: name=sshpass state=present
+
+  - name: Generating hosts file 
+    copy: src={{ current_full_repo_path }} dest=/etc/hosts owner=root group=root mode=0644
+
+  - name: Generating RSA Keypair for root
+    shell: 'ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""'
+    args:
+      creates: /root/.ssh/id_rsa
+
+  - name: Apply all system updates
+    yum: name=* state=latest
+
+#- include: playbook2_cont.yml
+
+#  tasks:
+#  - name: Distributing ssh-key (passwordless)
+#    shell: sshpass -p "rpcr" ssh-copy-id -i /root/.ssh/id_rsa.pub -o "StrictHostKeyChecking=no"  root@{{ item }}
+#    delegate_to: bf2
+#    with_items:
+#       - bf3
+       
+
+  - name: Install Packstack package
+    yum: name=openstack-packstack state=present
+
+#  - name: running packstack --allinone
+#    command: packstack --allinone
+#    delegate_to: cephaa
+#  - name: *** BROKEN **** add keystonerc to stack user *** BROKEN ***
+#    become: true
+#    command: cp -f /root/keystonerc_admin /home/stack && echo "source keystonerc_admin" >> /home/stack/.bashrc && chown stack:stack /home/stack/keystonerc_admin

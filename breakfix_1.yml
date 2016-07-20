@@ -1,0 +1,9 @@
+---
+- hosts: all
+  tasks:
+ 
+  - name: Trouble Instance I
+    shell: source /root/keystonerc_admin && nova secgroup-create default2 lab
+    
+  - name: Trouble Instance II
+    shell: source /root/keystonerc_admin && nova boot --flavor m1.tiny --image cirros --nic net-name=private --security-group default2 trouble_instance
